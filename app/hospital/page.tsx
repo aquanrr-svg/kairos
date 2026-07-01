@@ -1,47 +1,35 @@
-export default function HospitalPage() {
+export default function ReceptionPage() {
           return (
-              <main className="min-h-screen bg-slate-950 text-white p-6">
-                    <div className="max-w-md mx-auto">
+              <main className="min-h-screen bg-white flex flex-col items-center justify-center px-6 text-center">
+                    <p className="text-[10px] tracking-[0.25em] text-slate-400 uppercase font-medium mb-10">
+                            Tuesday · Morning Shift · 07:42
+                                  </p>
 
-                            <p className="text-blue-400 text-sm tracking-widest uppercase">
-                                      Kairos General Hospital
-                                              </p>
+                                        <h1 className="font-[family-name:var(--font-instrument-serif)] text-5xl sm:text-6xl text-slate-900 leading-tight">
+                                                Good morning,
+                                                        <br />
+                                                                <span className="italic text-blue-600">Doctor.</span>
+                                                                      </h1>
 
-                                                      <h1 className="text-4xl font-bold mt-3">
-                                                                Welcome, Doctor.
-                                                                        </h1>
+                                                                            <p className="mt-7 text-slate-500 max-w-xs leading-relaxed">
+                                                                                    The ward is quiet.
+                                                                                            <br />
+                                                                                                    Your first patient is waiting.
+                                                                                                          </p>
 
-                                                                                <p className="text-slate-400 mt-3">
-                                                                                          Your shift is about to begin.
-                                                                                                  </p>
+                                                                                                                <div className="mt-12 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2">
+                                                                                                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                                                                                                <span className="text-[11px] text-slate-500 font-medium">
+                                                                                                                                          1 patient assigned
+                                                                                                                                                  </span>
+                                                                                                                                                        </div>
 
-                                                                                                          <div className="mt-10 rounded-2xl bg-slate-900 border border-slate-800 p-5">
-                                                                                                                    <h2 className="text-xl font-semibold">
-                                                                                                                                Today's Shift
-                                                                                                                                          </h2>
-
-                                                                                                                                                    <div className="mt-5 space-y-3">
-
-                                                                                                                                                                <button className="w-full rounded-xl bg-slate-800 p-4 text-left hover:bg-slate-700">
-                                                                                                                                                                              🩺 Emergency Department
-                                                                                                                                                                                          </button>
-
-                                                                                                                                                                                                      <button className="w-full rounded-xl bg-slate-800 p-4 text-left hover:bg-slate-700">
-                                                                                                                                                                                                                    ❤️ Cardiology
-                                                                                                                                                                                                                                </button>
-
-                                                                                                                                                                                                                                            <button className="w-full rounded-xl bg-slate-800 p-4 text-left hover:bg-slate-700">
-                                                                                                                                                                                                                                                          🧠 Neurology
-                                                                                                                                                                                                                                                                      </button>
-
-                                                                                                                                                                                                                                                                                  <button className="w-full rounded-xl bg-blue-600 p-4 font-semibold hover:bg-blue-500">
-                                                                                                                                                                                                                                                                                                Start Today's Case
-                                                                                                                                                                                                                                                                                                            </button>
-
-                                                                                                                                                                                                                                                                                                                      </div>
-                                                                                                                                                                                                                                                                                                                              </div>
-
-                                                                                                                                                                                                                                                                                                                                    </div>
-                                                                                                                                                                                                                                                                                                                                        </main>
-                                                                                                                                                                                                                                                                                                                                          );
-                                                                                                                                                                                                                                                                                                                                          }
+                                                                                                                                                              <a
+                                                                                                                                                                      href="/nurse-briefing"
+                                                                                                                                                                              className="mt-14 px-10 py-4 rounded-2xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition-all hover:-translate-y-0.5 shadow-lg shadow-slate-900/20"
+                                                                                                                                                                                    >
+                                                                                                                                                                                            Proceed to Ward →
+                                                                                                                                                                                                  </a>
+                                                                                                                                                                                                      </main>
+                                                                                                                                                                                                        );
+                                                                                                                                                                                                        }
