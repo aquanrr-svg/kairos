@@ -1,13 +1,22 @@
-export default function Navbar() {
-      return (
-          <nav className="w-full flex items-center justify-between px-6 py-4 border-b border-slate-800">
-                <h1 className="text-2xl font-bold text-white">
-                        Kairos
-                              </h1>
+import Link from "next/link";
 
-                                    <button className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-500 transition">
-                                            Enter Hospital
-                                                  </button>
-                                                      </nav>
-                                                        );
-                                                        }
+export default function Navbar() {
+  return (
+    <nav className="w-full border-b border-slate-100 bg-white/80 backdrop-blur">
+      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
+        <Link
+          href="/"
+          className="font-[family-name:var(--font-instrument-serif)] text-xl text-slate-900"
+        >
+          Kai<em className="italic text-blue-600">ros</em>
+        </Link>
+        <Link
+          href="/reception"
+          className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors"
+        >
+          Enter Hospital →
+        </Link>
+      </div>
+    </nav>
+  );
+}
