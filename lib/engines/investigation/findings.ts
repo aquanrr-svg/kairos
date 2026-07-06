@@ -32,7 +32,8 @@
 // ─────────────────────────────────────────────
 
 import { SeededRNG }      from "../../shared/rng";
-import { FindingValue, ECGFinding } from "../disease/types";
+import type { FindingValue } from "../../types/common";
+import type { ECGFinding } from "../disease/types";
 import { InfarctLocation }          from "../../types/enums";
 import { isQualitativeFinding }     from "./kinetics";
 import { ResolvedFinding, GeneratedECGFinding } from "./types";
