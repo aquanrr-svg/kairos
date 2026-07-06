@@ -14,9 +14,16 @@
 //
 // All interfaces are immutable by design.
 // applyAction always returns a new HospitalState.
+//
+// ResolvedInvestigation uses only primitive types
+// and lib/types/enums. It never imports from the
+// Investigation Engine — that would create a
+// circular dependency. The Simulation Controller
+// maps InvestigationReport → ResolvedInvestigation.
 // ─────────────────────────────────────────────
 
 import { Encounter, EncounterAction, TriagePriority } from "../encounter";
+import { Severity }                                   from "../../types/enums";
 
 // ─── Encounter Lifecycle ──────────────────────
 // Valid transitions (one-directional):
@@ -26,7 +33,6 @@ import { Encounter, EncounterAction, TriagePriority } from "../encounter";
 //   paused      → active
 //
 // completed and abandoned are terminal.
-// A completed encounter can never become active.
 
 export type EncounterStatus =
   | "not_started"
@@ -36,168 +42,146 @@ export type EncounterStatus =
   | "abandoned";
 
 // ─── Time State ───────────────────────────────
-// Hospital Engine owns elapsedClinicalMinutes.
-// Future Time Engine will own the advancement
-// rules — how many clinical minutes each action
-// costs. When Time Engine arrives, it replaces
-// the advancement calculation without touching
-// this interface.
-//
 // elapsedRealSeconds is intentionally absent.
 // Wall clock elapsed is computed by the UI from
-// wallClockStartedAt to Date.now() at read time.
-// Clinical time is engine-controlled and stored
-// as a running total because it advances only
-// when the engine decides — not continuously.
+// wallClockStartedAt. Clinical time is stored as
+// a running total because it only advances when
+// the engine decides — not continuously.
 
 export interface TimeState {
-  readonly wallClockStartedAt:     string;   // ISO 8601 — session creation
-  readonly elapsedClinicalMinutes: number;   // advances per meaningful action
+  readonly wallClockStartedAt:     string;
+  readonly elapsedClinicalMinutes: number;
 }
 
 // ─── Completed Action ─────────────────────────
-// Records that the student performed an action
-// at a specific clinical time.
-// Hospital Engine appends one per action taken.
-// Future Scoring Engine reads this array.
 
 export interface CompletedAction {
   readonly action:          EncounterAction;
   readonly clinicalMinutes: number;
-  readonly timestamp:       string;   // ISO 8601 wall clock
+  readonly timestamp:       string;
 }
 
-// ─── Investigation Order ─────────────────────
+// ─── Investigation Order ──────────────────────
 // Hospital Engine records that an investigation
 // was ordered. It does NOT evaluate the result.
-// Future Investigation Engine reads this record,
-// applies kineticProfile at clinicalMinutes,
-// and returns result data for storage.
-//
-// investigationId matches Disease Engine
-// investigation ids. Hospital Engine stores the
-// string only — it never imports Disease Engine.
+// Future Investigation Engine resolves results.
+// Status transitions: pending → resulted via
+// recordInvestigationResult().
 
 export interface InvestigationOrder {
   readonly investigationId:   string;
-  readonly orderedAt:         number;   // clinical minutes
-  readonly timestamp:         string;   // ISO 8601 wall clock
+  readonly orderedAt:         number;
+  readonly timestamp:         string;
   readonly status:            "pending" | "resulted";
-  readonly resultAvailableAt: number;   // clinical minutes
-                                        // Future Time Engine sets this.
-                                        // v1: defaults to orderedAt.
+  readonly resultAvailableAt: number;
+}
+
+// ─── Resolved Investigation ───────────────────
+// A minimal record that an investigation has been
+// resolved and stored in session state.
+//
+// Uses only primitives and lib/types/enums —
+// never imports from Investigation Engine.
+//
+// The Simulation Controller maps:
+//   InvestigationReport → ResolvedInvestigation
+//
+// severityTier is stored for the Scoring Engine
+// to evaluate result interpretation quality.
+// The Simulation Controller strips it from any
+// student-facing display.
+//
+// Multiple entries may exist for the same
+// investigationId — serial testing produces one
+// ResolvedInvestigation per resolution.
+
+export interface ResolvedInvestigation {
+  readonly investigationId: string;
+  readonly name:            string;
+  readonly resolvedAt:      number;       // clinical minutes when resolved
+  readonly timestamp:       string;       // ISO 8601
+  readonly hasRedFlags:     boolean;
+  readonly findingCount:    number;
+  readonly severityTier:    Severity | "normal";
 }
 
 // ─── Treatment Record ─────────────────────────
-// Hospital Engine records that a treatment was
-// administered. It does NOT evaluate correctness.
-// Future Treatment Engine reads this record and
-// evaluates dose, route, and timing against
-// Medicine Engine data.
-//
-// medicineId matches Medicine Engine medicine ids.
-// Hospital Engine stores the string only — it
-// never imports Medicine Engine.
 
 export interface TreatmentRecord {
   readonly medicineId: string;
-  readonly orderedAt:  number;    // clinical minutes
-  readonly timestamp:  string;    // ISO 8601 wall clock
-  readonly dose?:      string;    // optional free-text in v1
-  readonly route?:     string;    // optional free-text in v1
+  readonly orderedAt:  number;
+  readonly timestamp:  string;
+  readonly dose?:      string;
+  readonly route?:     string;
 }
 
 // ─── Observation Record ───────────────────────
-// Student's free-text clinical observation.
-// Stored verbatim. Future engines may parse it.
-// Hospital Engine only records it.
 
 export interface ObservationRecord {
   readonly content:    string;
-  readonly recordedAt: number;    // clinical minutes
-  readonly timestamp:  string;    // ISO 8601 wall clock
+  readonly recordedAt: number;
+  readonly timestamp:  string;
 }
 
 // ─── Hospital Event Type ──────────────────────
 // Every state transition produces exactly one event.
-// The event log is the audit trail of the session.
-// Future Scoring Engine reads events to evaluate
-// decisions without querying state directly.
+// Future Scoring Engine reads the event log.
 
 export type HospitalEventType =
   | "SESSION_STARTED"
   | "ACTION_COMPLETED"
   | "INVESTIGATION_ORDERED"
+  | "INVESTIGATION_RESULTED"
   | "TREATMENT_ADMINISTERED"
   | "OBSERVATION_RECORDED"
   | "ENCOUNTER_COMPLETED"
   | "ENCOUNTER_ABANDONED";
 
 // ─── Hospital Event ───────────────────────────
-// Immutable audit log entry.
-// payload is typed as Record<string, unknown>
-// in v1 — payload construction is centralised
-// in events.ts and follows consistent structure
-// per event type. Before Scoring Engine is built,
-// payload adopts a discriminated union.
 
 export interface HospitalEvent {
   readonly id:              string;
   readonly type:            HospitalEventType;
   readonly clinicalMinutes: number;
-  readonly timestamp:       string;   // ISO 8601 wall clock
+  readonly timestamp:       string;
   readonly payload:         Readonly<Record<string, unknown>>;
 }
 
 // ─── Hospital Action ──────────────────────────
-// Discriminated union of all commands that may
-// be submitted to applyAction.
+// Discriminated union of all student commands.
+// Adding a new variant causes a compile error in
+// applyAction until its handler is implemented.
 //
-// START_SESSION is intentionally absent.
-// Session creation is handled by createSession(encounter)
-// which produces the initial HospitalState directly.
-// This prevents the illegal state of starting twice.
-//
-// When a new action type is added here, TypeScript's
-// exhaustive switch in applyAction will produce a
-// compile error until the handler is implemented.
-// This enforces correctness at compile time.
+// recordInvestigationResult is NOT a HospitalAction.
+// It is engine-to-engine communication triggered
+// by the Simulation Controller — not a student action.
 
 export type HospitalAction =
-  | { readonly type: "COMPLETE_ACTION";      readonly action: EncounterAction                                           }
-  | { readonly type: "ORDER_INVESTIGATION";  readonly investigationId: string                                           }
-  | { readonly type: "ADMINISTER_TREATMENT"; readonly medicineId: string; readonly dose?: string; readonly route?: string }
-  | { readonly type: "RECORD_OBSERVATION";   readonly content: string                                                   }
-  | { readonly type: "COMPLETE_ENCOUNTER"                                                                               }
-  | { readonly type: "ABANDON_ENCOUNTER"                                                                                };
+  | { readonly type: "COMPLETE_ACTION";      readonly action: EncounterAction                                              }
+  | { readonly type: "ORDER_INVESTIGATION";  readonly investigationId: string                                              }
+  | { readonly type: "ADMINISTER_TREATMENT"; readonly medicineId: string; readonly dose?: string; readonly route?: string  }
+  | { readonly type: "RECORD_OBSERVATION";   readonly content: string                                                      }
+  | { readonly type: "COMPLETE_ENCOUNTER"                                                                                  }
+  | { readonly type: "ABANDON_ENCOUNTER"                                                                                   };
 
 // ─── Hospital State ───────────────────────────
-// The complete, immutable record of everything
-// that has happened in this encounter session.
+// Complete, immutable record of everything that
+// has happened in this encounter session.
 //
-// applyAction always returns a new HospitalState.
-// The previous state is never mutated.
-//
-// triagePriority is copied from Encounter at
-// session creation. It never changes — triage
-// is an initial assessment, not a dynamic value
-// in this engine. Future Time Engine may introduce
-// dynamic deterioration through a separate field.
-//
-// availableActions starts from Encounter.availableActions.
-// Future Hospital Engine phases will gate these
-// based on completedActions (e.g. treatment is
-// unavailable before history is taken).
+// resolvedInvestigations: grows as investigation
+// results are recorded via recordInvestigationResult.
+// Starts empty. Never mutated in place.
 
 export interface HospitalState {
   readonly sessionId:              string;
   readonly caseId:                 string;
   readonly status:                 EncounterStatus;
   readonly triagePriority:         TriagePriority;
-  readonly startedAt:              string;                          // ISO 8601
+  readonly startedAt:              string;
   readonly timeState:              TimeState;
   readonly completedActions:       readonly CompletedAction[];
   readonly orderedInvestigations:  readonly InvestigationOrder[];
+  readonly resolvedInvestigations: readonly ResolvedInvestigation[];
   readonly administeredTreatments: readonly TreatmentRecord[];
   readonly observations:           readonly ObservationRecord[];
   readonly events:                 readonly HospitalEvent[];
@@ -205,18 +189,6 @@ export interface HospitalState {
 }
 
 // ─── Student Session ──────────────────────────
-// The top-level container handed to the UI layer.
-//
-// encounter is the original Encounter — never
-// modified after session creation. The UI reads
-// patient information from session.encounter.
-//
-// state is replaced on every applyAction call.
-// The UI reads clinical progress from session.state.
-//
-// These two fields never merge by design.
-// Encounter is the immutable case context.
-// HospitalState is the evolving session record.
 
 export interface StudentSession {
   readonly sessionId: string;

@@ -1,25 +1,26 @@
 // ─────────────────────────────────────────────
 // KAIROS — Hospital Engine State Management
 //
-// Two public functions:
-//   createSession(encounter) → StudentSession
-//   applyAction(state, action) → HospitalState
+// Two public student-facing functions:
+//   createSession(encounter)          → StudentSession
+//   applyAction(state, action)        → HospitalState
+//
+// One engine-to-engine function:
+//   recordInvestigationResult(state, resolved) → HospitalState
+//
+// This function is NOT routed through applyAction.
+// It is called by the Simulation Controller after
+// resolveInvestigation() returns a successful result.
+// Routing it through applyAction would require a new
+// HospitalAction variant, breaking exhaustive switches.
 //
 // Invariants enforced here:
-//   • HospitalState is never mutated — all
-//     transitions return a new object.
+//   • HospitalState is never mutated.
+//   • All transitions return a new object.
 //   • All array operations use spread.
-//   • Actions submitted to a non-active encounter
-//     are silently ignored (idempotent guard).
-//   • applyAction switch is exhaustive — adding a
-//     new HospitalAction variant causes a compile
-//     error until its handler is implemented.
-//
-// Clinical time advancement:
-//   ENCOUNTER_ACTION_COSTS and the per-action
-//   constants below are v1 approximations.
-//   Future Time Engine replaces advanceClinicalTime
-//   and these values without touching any handler.
+//   • Actions submitted to non-active encounters
+//     are silently ignored.
+//   • applyAction switch is exhaustive.
 // ─────────────────────────────────────────────
 
 import { Encounter, EncounterAction } from "../encounter";
@@ -34,12 +35,14 @@ import {
   InvestigationOrder,
   TreatmentRecord,
   ObservationRecord,
+  ResolvedInvestigation,
 } from "./types";
 
 import {
   buildSessionStartedEvent,
   buildActionCompletedEvent,
   buildInvestigationOrderedEvent,
+  buildInvestigationResultedEvent,
   buildTreatmentAdministeredEvent,
   buildObservationRecordedEvent,
   buildEncounterCompletedEvent,
@@ -47,10 +50,10 @@ import {
 } from "./events";
 
 // ─── Clinical Time Costs (v1) ─────────────────
-// How many clinical minutes each action costs.
 // Record<EncounterAction, number> enforces that
 // all six EncounterAction variants are covered.
 // TypeScript compile error if a variant is missing.
+// Future Time Engine replaces this map.
 
 const ENCOUNTER_ACTION_COSTS: Record<EncounterAction, number> = {
   "Take History":         10,
@@ -61,7 +64,6 @@ const ENCOUNTER_ACTION_COSTS: Record<EncounterAction, number> = {
   "Observe":              15,
 };
 
-// Costs for actions that bypass COMPLETE_ACTION
 const INVESTIGATION_ORDER_COST  = 5;
 const TREATMENT_ADMIN_COST       = 5;
 const OBSERVATION_RECORD_COST    = 2;
@@ -74,11 +76,6 @@ function generateSessionId(caseId: string): string {
   return `${caseId}-${time}-${rand}`;
 }
 
-/**
- * Advances clinical time by the given number of minutes.
- * Returns a new TimeState — never mutates the existing one.
- * Future Time Engine replaces this function.
- */
 function advanceClinicalTime(
   timeState: TimeState,
   minutes:   number
@@ -89,43 +86,15 @@ function advanceClinicalTime(
   };
 }
 
-/**
- * Appends a single event to the events array immutably.
- * Returns a new state object.
- */
-function appendEvent(
-  state: HospitalState,
-  event: HospitalEvent
-): HospitalState {
-  return { ...state, events: [...state.events, event] };
-}
-
-/**
- * Guard: only active encounters accept actions.
- * Terminal states (completed, abandoned) and
- * non-started or paused encounters return state unchanged.
- */
 function isActive(state: HospitalState): boolean {
   return state.status === "active";
 }
 
-/**
- * Exhaustive switch guard.
- * TypeScript narrows action to never after all
- * HospitalAction variants are handled. If a new
- * variant is added to the union without a handler,
- * this causes a compile error.
- */
 function assertNever(value: never): never {
-  throw new Error(
-    `Unhandled HospitalAction type: ${JSON.stringify(value)}`
-  );
+  throw new Error(`Unhandled HospitalAction type: ${JSON.stringify(value)}`);
 }
 
 // ─── Action Handlers ──────────────────────────
-// One pure function per HospitalAction variant.
-// Each returns a new HospitalState.
-// None mutate their inputs.
 
 function handleCompleteAction(
   state:  HospitalState,
@@ -165,9 +134,6 @@ function handleOrderInvestigation(
   const newTimeState = advanceClinicalTime(state.timeState, INVESTIGATION_ORDER_COST);
   const timestamp    = new Date().toISOString();
 
-  // v1: resultAvailableAt equals orderedAt (results immediately available).
-  // Future Time Engine sets resultAvailableAt based on
-  // investigation type and kineticProfile.
   const order: InvestigationOrder = {
     investigationId:   action.investigationId,
     orderedAt:         newTimeState.elapsedClinicalMinutes,
@@ -249,49 +215,23 @@ function handleRecordObservation(
   };
 }
 
-function handleCompleteEncounter(
-  state: HospitalState
-): HospitalState {
+function handleCompleteEncounter(state: HospitalState): HospitalState {
   if (!isActive(state)) return state;
-
-  const event = buildEncounterCompletedEvent(
-    state.timeState.elapsedClinicalMinutes
-  );
-
-  return {
-    ...state,
-    status: "completed",
-    events: [...state.events, event],
-  };
+  const event = buildEncounterCompletedEvent(state.timeState.elapsedClinicalMinutes);
+  return { ...state, status: "completed", events: [...state.events, event] };
 }
 
-function handleAbandonEncounter(
-  state: HospitalState
-): HospitalState {
+function handleAbandonEncounter(state: HospitalState): HospitalState {
   if (!isActive(state)) return state;
-
-  const event = buildEncounterAbandonedEvent(
-    state.timeState.elapsedClinicalMinutes
-  );
-
-  return {
-    ...state,
-    status: "abandoned",
-    events: [...state.events, event],
-  };
+  const event = buildEncounterAbandonedEvent(state.timeState.elapsedClinicalMinutes);
+  return { ...state, status: "abandoned", events: [...state.events, event] };
 }
 
 // ─── Public API ───────────────────────────────
 
 /**
  * Creates a new immutable StudentSession from an Encounter.
- *
- * Status begins as "active" — Hospital Engine v1 has no
- * "not_started" phase. The session is ready to accept
- * actions immediately after creation.
- *
- * The SESSION_STARTED event is the first entry in the
- * events log, establishing the audit trail.
+ * All arrays initialised empty. Status begins as "active".
  */
 export function createSession(encounter: Encounter): StudentSession {
   const now       = new Date().toISOString();
@@ -302,8 +242,6 @@ export function createSession(encounter: Encounter): StudentSession {
     elapsedClinicalMinutes: 0,
   };
 
-  const sessionStartedEvent = buildSessionStartedEvent(0);
-
   const state: HospitalState = {
     sessionId,
     caseId:                  encounter.caseId,
@@ -313,9 +251,10 @@ export function createSession(encounter: Encounter): StudentSession {
     timeState,
     completedActions:        [],
     orderedInvestigations:   [],
+    resolvedInvestigations:  [],
     administeredTreatments:  [],
     observations:            [],
-    events:                  [sessionStartedEvent],
+    events:                  [buildSessionStartedEvent(0)],
     availableActions:        encounter.availableActions,
   };
 
@@ -323,12 +262,9 @@ export function createSession(encounter: Encounter): StudentSession {
 }
 
 /**
- * Applies a HospitalAction to produce a new HospitalState.
- *
- * This function is pure — it never mutates state.
- * Actions submitted to non-active encounters are ignored.
- * The switch is exhaustive — TypeScript enforces that
- * every HospitalAction variant is handled.
+ * Applies a student HospitalAction to produce a new HospitalState.
+ * Exhaustive switch — adding a new HospitalAction variant causes a
+ * compile error until its handler is implemented.
  */
 export function applyAction(
   state:  HospitalState,
@@ -350,4 +286,57 @@ export function applyAction(
     default:
       return assertNever(action);
   }
+}
+
+/**
+ * Records a resolved investigation result into HospitalState.
+ *
+ * Called by the Simulation Controller after a successful
+ * resolveInvestigation() call — not by student actions.
+ *
+ * Transitions:
+ *   • Appends resolved to resolvedInvestigations
+ *   • Updates the first matching pending order to "resulted"
+ *   • Appends an INVESTIGATION_RESULTED event
+ *
+ * Serial testing: if the same investigationId appears multiple
+ * times in orderedInvestigations, only the first "pending" entry
+ * transitions. Subsequent orders remain "pending" until their
+ * results are individually recorded.
+ *
+ * Encounter status is not checked — late-arriving results
+ * (e.g. after encounter completion) are permitted.
+ * The Simulation Controller is responsible for status gating.
+ */
+export function recordInvestigationResult(
+  state:    HospitalState,
+  resolved: ResolvedInvestigation
+): HospitalState {
+  let firstPendingUpdated = false;
+
+  const updatedOrders = state.orderedInvestigations.map(order => {
+    if (
+      !firstPendingUpdated &&
+      order.investigationId === resolved.investigationId &&
+      order.status === "pending"
+    ) {
+      firstPendingUpdated = true;
+      return { ...order, status: "resulted" as const };
+    }
+    return order;
+  });
+
+  const event = buildInvestigationResultedEvent(
+    resolved.investigationId,
+    resolved.resolvedAt,
+    resolved.severityTier,
+    state.timeState.elapsedClinicalMinutes
+  );
+
+  return {
+    ...state,
+    orderedInvestigations:   updatedOrders,
+    resolvedInvestigations:  [...state.resolvedInvestigations, resolved],
+    events:                  [...state.events, event],
+  };
 }
