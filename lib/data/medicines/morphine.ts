@@ -1,5 +1,5 @@
-import { Medicine } from "../../engines/medicine/types";
-import { DataStatus, RouteOfAdministration } from "../../types/enums";
+import { Medicine }             from "../../engines/medicine/types";
+import { DataStatus, RouteOfAdministration, GuidelineSource } from "../../types/enums";
 
 export const morphine: Medicine = {
   id:          "morphine",
@@ -8,24 +8,31 @@ export const morphine: Medicine = {
   status:      DataStatus.Production,
   references: [
     {
-      source: "ESC",
-      title:  "ESC Guidelines for the management of acute myocardial infarction",
-      year:   2023,
+      source:  GuidelineSource.ESC,
+      title:   "2023 ESC Guidelines for the management of acute coronary syndromes",
+      year:    2023,
+      section: "Analgesia in ACS",
     },
   ],
-  genericName: "Morphine Sulphate",
-  brandNames:  ["Morphine"],
-  drugClass:   "Opioid analgesic",
-  mechanism:   "Mu-opioid receptor agonist. Reduces pain and sympathetic activation, decreasing myocardial oxygen demand.",
-  indications: ["Severe pain in ACS", "Acute pulmonary oedema"],
+  genericName:  "Morphine Sulphate",
+  brandNames:   ["Morphine"],
+  drugClass:    "Opioid analgesic — mu-receptor agonist",
+  mechanism:
+    "Mu-opioid receptor agonist. Reduces pain and sympathetic activation, " +
+    "decreasing myocardial oxygen demand. Causes venodilation reducing preload.",
+  indications: [
+    "Severe pain in ACS unresponsive to nitrates",
+    "Acute cardiogenic pulmonary oedema",
+  ],
   contraindications: [
     "Hypotension (systolic BP <90 mmHg)",
-    "Respiratory depression",
-    "Concurrent use of MAOIs",
+    "Respiratory depression or hypoventilation",
+    "Concurrent use of MAO inhibitors",
+    "Severe obstructive airways disease",
   ],
   doseRules: [
     {
-      population:  "adult",
+      population: "adult",
       dose: {
         value:      4,
         unit:       "mg",
@@ -33,9 +40,10 @@ export const morphine: Medicine = {
       },
       route:     RouteOfAdministration.IV,
       frequency: "prn_pain",
-      notes:     [
-        "2–4mg IV titrated to pain. Can repeat every 5–10 minutes as needed.",
-        "Use with caution — evidence suggests morphine may delay absorption of oral P2Y12 inhibitors.",
+      notes: [
+        "2–4mg IV titrated to pain. Can repeat every 5–10 minutes.",
+        "Use with caution — morphine delays absorption of oral P2Y12 inhibitors.",
+        "Absolutely contraindicated if systolic BP <90 mmHg.",
       ],
     },
   ],
@@ -44,24 +52,32 @@ export const morphine: Medicine = {
     {
       parameter: "Respiratory rate",
       frequency: "Continuous after administration",
-      redFlag:   "RR <10/min — withhold next dose, consider naloxone",
+      redFlag:   "RR <10/min — withhold next dose, consider naloxone 400mcg IV",
     },
     {
       parameter: "Blood pressure",
-      frequency: "Continuous",
+      frequency: "Every 5 minutes for 30 minutes after IV administration",
       redFlag:   "Systolic BP <90 mmHg — withhold morphine",
+    },
+    {
+      parameter: "Sedation level",
+      frequency: "Continuous",
+      redFlag:   "Excessive sedation — reduce dose, ensure airway",
     },
   ],
   sideEffects: [
     "Nausea and vomiting",
     "Respiratory depression",
-    "Hypotension",
-    "Delayed gastric emptying — may delay oral drug absorption",
+    "Hypotension and bradycardia",
+    "Delayed gastric emptying — clinically relevant for oral antiplatelet absorption",
     "Pruritus",
+    "Urinary retention",
   ],
   educationalNotes: [
     "Use for pain relief only if patient is significantly distressed and not hypotensive.",
-    "Morphine delays absorption of oral antiplatelets — clinically relevant in STEMI.",
-    "Some studies suggest association with worse outcomes — use judiciously, not routinely.",
+    "Morphine delays absorption of oral antiplatelets — clinically significant in STEMI.",
+    "The CRUSADE and other registry data suggest association with worse outcomes in NSTEMI.",
+    "Naloxone 400mcg IV reverses opioid effects — have available at bedside.",
+    "Do not use routinely — use only when pain is severe and other measures insufficient.",
   ],
 };

@@ -1,5 +1,5 @@
-import { Medicine } from "../../engines/medicine/types";
-import { DataStatus, RouteOfAdministration } from "../../types/enums";
+import { Medicine }             from "../../engines/medicine/types";
+import { DataStatus, RouteOfAdministration, GuidelineSource } from "../../types/enums";
 
 export const heparin: Medicine = {
   id:          "heparin_uf",
@@ -8,25 +8,33 @@ export const heparin: Medicine = {
   status:      DataStatus.Production,
   references: [
     {
-      source: "ESC",
-      title:  "ESC Guidelines for the management of acute myocardial infarction",
-      year:   2023,
+      source:  GuidelineSource.ESC,
+      title:   "2023 ESC Guidelines for the management of acute coronary syndromes",
+      year:    2023,
+      section: "Anticoagulation therapy, primary PCI",
     },
   ],
-  genericName: "Unfractionated Heparin",
-  brandNames:  ["Heparin Sodium"],
-  drugClass:   "Anticoagulant — indirect thrombin inhibitor",
-  mechanism:   "Potentiates antithrombin III activity, inhibiting thrombin (factor IIa) and factor Xa. Prevents thrombus propagation.",
-  indications: ["STEMI — adjunct to primary PCI", "ACS anticoagulation", "DVT/PE treatment"],
+  genericName:  "Unfractionated Heparin",
+  brandNames:   ["Heparin Sodium"],
+  drugClass:    "Anticoagulant — indirect thrombin inhibitor",
+  mechanism:
+    "Potentiates antithrombin III activity, inhibiting thrombin (factor IIa) " +
+    "and factor Xa. Prevents thrombus propagation without dissolving existing clot.",
+  indications: [
+    "STEMI — adjunct anticoagulation during primary PCI",
+    "ACS anticoagulation",
+    "DVT and PE treatment",
+    "Prevention of thrombus propagation",
+  ],
   contraindications: [
     "Active major bleeding",
     "Heparin-induced thrombocytopenia (HIT)",
     "Severe thrombocytopenia",
-    "Hypersensitivity to heparin",
+    "Hypersensitivity to heparin or pork products",
   ],
   doseRules: [
     {
-      population:  "adult",
+      population: "adult",
       dose: {
         value:       60,
         unit:        "units/kg",
@@ -35,9 +43,10 @@ export const heparin: Medicine = {
       },
       route:     RouteOfAdministration.IVBolus,
       frequency: "stat",
-      notes:     [
-        "60 units/kg IV bolus, maximum 4000 units, given before primary PCI.",
-        "Additional boluses may be required during procedure under cath lab guidance.",
+      notes: [
+        "60 units/kg IV bolus before primary PCI. Maximum 4000 units.",
+        "Additional boluses may be required during PCI under cath lab guidance.",
+        "Weight-based dosing is mandatory — never give a flat dose.",
       ],
     },
   ],
@@ -52,24 +61,25 @@ export const heparin: Medicine = {
     {
       parameter: "Platelet count",
       frequency: "Day 4–14 of treatment",
-      redFlag:   "Platelet count fall >50% — suspect HIT",
+      redFlag:   "Platelet count fall >50% — suspect HIT immediately",
     },
     {
       parameter: "Active bleeding",
       frequency: "Continuous clinical monitoring",
-      redFlag:   "Active bleeding — hold heparin, assess reversal with protamine",
+      redFlag:   "Active bleeding — hold heparin, consider protamine reversal",
     },
   ],
   sideEffects: [
-    "Bleeding",
-    "Heparin-induced thrombocytopenia (HIT)",
+    "Bleeding (major and minor)",
+    "Heparin-induced thrombocytopenia (HIT) — immune-mediated, life-threatening",
     "Osteoporosis with long-term use",
-    "Hyperkalaemia",
-    "Hypersensitivity",
+    "Hyperkalaemia via aldosterone suppression",
+    "Hypersensitivity reactions",
   ],
   educationalNotes: [
-    "Weight-based dosing is essential. Never give a flat dose.",
-    "HIT is a life-threatening immune reaction — monitor platelets in all patients.",
-    "Protamine sulphate reverses heparin effect in emergencies.",
+    "Weight-based dosing is essential. Maximum 4000 units for PCI bolus.",
+    "HIT is a life-threatening immune reaction — monitor platelets on all patients.",
+    "Protamine sulphate reverses heparin effect: 1mg per 100 units heparin given.",
+    "HIT causes paradoxical thrombosis — do not give platelet transfusions.",
   ],
 };
