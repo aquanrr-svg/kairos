@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { formatClockTime } from '../../lib/shared/time';
 
 export default function LandingPage() {
   const activePulseLineRef = useRef<SVGPathElement>(null);
@@ -68,17 +69,8 @@ export default function LandingPage() {
   // Update clocks
   const updateClocks = () => {
     const now = new Date();
-    const timeString = now.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true,
-    });
-    const shortTimeString = now.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-    });
+    const timeString = formatClockTime(now, { locale: 'en-US', hour12: true, withSeconds: true });
+    const shortTimeString = formatClockTime(now, { locale: 'en-US', hour12: true });
     const timestampEl = document.getElementById('timestamp');
     const receptionClockEl = document.getElementById('receptionClock');
     if (timestampEl) timestampEl.innerText = timeString;

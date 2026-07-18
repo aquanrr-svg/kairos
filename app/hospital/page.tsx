@@ -1,3 +1,5 @@
+import PrimaryLink from "../../components/kairos/PrimaryLink";
+
 export default function ReceptionPage() {
           return (
               <main className="min-h-screen bg-white flex flex-col items-center justify-center px-6 text-center">
@@ -24,12 +26,12 @@ export default function ReceptionPage() {
                                                                                                                                                   </span>
                                                                                                                                                         </div>
 
-                                                                                                                                                              <a
+                                                                                                                                                              <PrimaryLink
                                                                                                                                                                       href="/nurse-briefing"
-                                                                                                                                                                              className="mt-14 px-10 py-4 rounded-2xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition-all hover:-translate-y-0.5 shadow-lg shadow-slate-900/20"
+                                                                                                                                                                              className="mt-14 hover:-translate-y-0.5"
                                                                                                                                                                                     >
                                                                                                                                                                                             Proceed to Ward →
-                                                                                                                                                                                                  </a>
+                                                                                                                                                                                                  </PrimaryLink>
                                                                                                                                                                                                       </main>
                                                                                                                                                                                                         );
                                                                                                                                                                                                         }

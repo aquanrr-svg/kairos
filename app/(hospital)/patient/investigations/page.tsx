@@ -1,5 +1,7 @@
 "use client";
-import { useState } from "react";
+import ScreenShell from "../../../../components/kairos/ScreenShell";
+import PrimaryLink from "../../../../components/kairos/PrimaryLink";
+import { useToggleSet } from "../../../../lib/shared/useToggleSet";
 
 const tests = [
   {
@@ -52,81 +54,61 @@ const colorMap: Record<string, string> = {
 };
 
 export default function InvestigationsPage() {
-  const [ordered, setOrdered] = useState<string[]>([]);
-
-  function toggle(id: string) {
-    setOrdered((prev) =>
-      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
-    );
-  }
+  const { toggle, has } = useToggleSet();
 
   return (
-    <main className="min-h-screen bg-white flex flex-col px-6 py-10">
-      <div className="max-w-md mx-auto w-full flex flex-col flex-1">
+    <ScreenShell
+      title="Investigations"
+      subtitle="Order what you need. Every unnecessary test costs time."
+    >
+      <div className="flex flex-col gap-3 mb-10">
+        {tests.map((t) => (
+          <div key={t.id}>
+            <button
+              onClick={() => toggle(t.id)}
+              className={`w-full text-left px-4 py-4 rounded-2xl border transition-all flex justify-between items-center ${
+                has(t.id)
+                  ? "border-blue-200 bg-blue-50"
+                  : "border-slate-200 bg-white hover:border-slate-300"
+              }`}
+            >
+              <div>
+                <p className={`text-sm font-semibold ${has(t.id) ? "text-blue-700" : "text-slate-800"}`}>
+                  {t.name}
+                </p>
+                <p className="text-xs text-slate-400 mt-0.5">{t.desc}</p>
+              </div>
+              <span className={`text-xs font-bold ${has(t.id) ? "text-blue-600" : "text-slate-300"}`}>
+                {has(t.id) ? "✓" : "○"}
+              </span>
+            </button>
 
-        <a href="/patient" className="text-xs text-slate-400 hover:text-slate-600 mb-8 flex items-center gap-1">
-          ← Back to Patient
-        </a>
-
-        <h1 className="font-[family-name:var(--font-instrument-serif)] text-3xl text-slate-900 mb-2">
-          Investigations
-        </h1>
-        <p className="text-sm text-slate-400 mb-8 leading-relaxed">
-          Order what you need. Every unnecessary test costs time.
-        </p>
-
-        <div className="flex flex-col gap-3 mb-10">
-          {tests.map((t) => (
-            <div key={t.id}>
-              <button
-                onClick={() => toggle(t.id)}
-                className={`w-full text-left px-4 py-4 rounded-2xl border transition-all flex justify-between items-center ${
-                  ordered.includes(t.id)
-                    ? "border-blue-200 bg-blue-50"
-                    : "border-slate-200 bg-white hover:border-slate-300"
-                }`}
-              >
-                <div>
-                  <p className={`text-sm font-semibold ${ordered.includes(t.id) ? "text-blue-700" : "text-slate-800"}`}>
-                    {t.name}
-                  </p>
-                  <p className="text-xs text-slate-400 mt-0.5">{t.desc}</p>
-                </div>
-                <span className={`text-xs font-bold ${ordered.includes(t.id) ? "text-blue-600" : "text-slate-300"}`}>
-                  {ordered.includes(t.id) ? "✓" : "○"}
-                </span>
-              </button>
-
-              {ordered.includes(t.id) && (
-                <div className="mt-2 mx-2 rounded-xl border border-slate-100 bg-slate-50 divide-y divide-slate-100">
-                  {t.results.map((r, i) => (
-                    <div key={i} className="flex justify-between items-center px-4 py-2.5">
-                      <span className="text-xs text-slate-500">{r.label}</span>
-                      <div className="text-right">
-                        <span className={`text-xs font-bold ${colorMap[r.color]}`}>
-                          {r.value}
+            {has(t.id) && (
+              <div className="mt-2 mx-2 rounded-xl border border-slate-100 bg-slate-50 divide-y divide-slate-100">
+                {t.results.map((r, i) => (
+                  <div key={i} className="flex justify-between items-center px-4 py-2.5">
+                    <span className="text-xs text-slate-500">{r.label}</span>
+                    <div className="text-right">
+                      <span className={`text-xs font-bold ${colorMap[r.color]}`}>
+                        {r.value}
+                      </span>
+                      {r.ref && (
+                        <span className="text-xs text-slate-300 ml-1.5">
+                          ref: {r.ref}
                         </span>
-                        {r.ref && (
-                          <span className="text-xs text-slate-300 ml-1.5">
-                            ref: {r.ref}
-                          </span>
-                        )}
-                      </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        <a
-          href="/patient/treatment"
-          className="block text-center px-10 py-4 rounded-2xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/20"
-        >
-          Proceed to Treatment →
-        </a>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
-    </main>
+
+      <PrimaryLink href="/patient/treatment" className="block text-center">
+        Proceed to Treatment →
+      </PrimaryLink>
+    </ScreenShell>
   );
 }

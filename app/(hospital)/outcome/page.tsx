@@ -1,3 +1,5 @@
+import PrimaryLink from '../../../components/kairos/PrimaryLink';
+
 export default function OutcomePage() {
   return (
     <main className="min-h-screen bg-white flex flex-col items-center justify-center px-6 text-center">
@@ -22,12 +24,9 @@ export default function OutcomePage() {
           <p className="text-xs text-slate-400 uppercase tracking-wide mt-1">SpO₂</p>
         </div>
       </div>
-      <a
-        href="/reflection"
-        className="px-10 py-4 rounded-2xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/20"
-      >
+      <PrimaryLink href="/reflection">
         Clinical Reflection →
-      </a>
+      </PrimaryLink>
     </main>
   );
 }

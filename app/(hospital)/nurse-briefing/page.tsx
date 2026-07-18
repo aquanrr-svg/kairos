@@ -1,3 +1,5 @@
+import PrimaryLink from '../../../components/kairos/PrimaryLink';
+
 export default function NurseBriefingPage() {
   return (
     <main className="min-h-screen bg-white flex flex-col px-6 py-14">
@@ -48,12 +50,9 @@ export default function NurseBriefingPage() {
         </div>
       </div>
       <div className="max-w-md mx-auto w-full">
-        <a
-          href="/patient"
-          className="block text-center px-10 py-4 rounded-2xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition-all hover:-translate-y-0.5 shadow-lg shadow-slate-900/20"
-        >
+        <PrimaryLink href="/patient" className="block text-center hover:-translate-y-0.5">
           Accept Shift →
-        </a>
+        </PrimaryLink>
         <p className="mt-3 text-center text-xs text-slate-400 italic">
           There is no going back once you accept.
         </p>
