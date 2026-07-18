@@ -20,7 +20,7 @@ export default function LandingPage() {
 
     if (activePulseLineRef.current) {
       activePulseLineRef.current.classList.remove('pulse-sweep', 'pulse-strong');
-      void activePulseLineRef.current.offsetWidth; // Force reflow
+      void (activePulseLineRef.current as unknown as HTMLElement).offsetWidth; // Force reflow
 
       if (isStrongBeat) {
         activePulseLineRef.current.classList.add('pulse-strong');
@@ -108,7 +108,7 @@ export default function LandingPage() {
       body.classList.add('p3-heartbeat');
       if (activePulseLineRef.current) {
         activePulseLineRef.current.classList.remove('pulse-sweep', 'pulse-strong');
-        void activePulseLineRef.current.offsetWidth;
+        void (activePulseLineRef.current as unknown as HTMLElement).offsetWidth;
         activePulseLineRef.current.classList.add('pulse-active');
       }
       setTimeout(emitClinicalMonitorBeep, 400);
