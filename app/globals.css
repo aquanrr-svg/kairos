@@ -740,13 +740,13 @@ body.p1-commitment .btn-action {
 }
 
 /* Phase 2: Environmental Dissolve */
-body.p2-environmental-shift header {
+body.p2-environmental-shift #landingHeader {
   opacity: 0;
   transform: translateY(-12px);
   pointer-events: none;
 }
 
-body.p2-environmental-shift footer {
+body.p2-environmental-shift #landingFooter {
   opacity: 0;
   transform: translateY(12px);
   pointer-events: none;
