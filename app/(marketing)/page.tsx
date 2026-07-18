@@ -1,69 +1,515 @@
-// ─────────────────────────────────────────────
-// KAIROS — Landing Page
-//
-// One purpose: curiosity.
-// Not marketing. Not features. Not explanation.
-// Just the feeling that this is different.
-// ─────────────────────────────────────────────
+'use client';
 
-import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
 
 export default function LandingPage() {
+  const activePulseLineRef = useRef<SVGPathElement>(null);
+  const terminalContainerRef = useRef<HTMLDivElement>(null);
+  const initMetadataRef = useRef<HTMLDivElement>(null);
+  const thresholdShroudRef = useRef<HTMLDivElement>(null);
+  const receptionDeskRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const ecgTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastHoverTimeRef = useRef<number>(0);
+
+  // ECG Pacing State Engine
+  const triggerEcgBeat = (isStrongBeat = false) => {
+    if (isTransitioning) return;
+
+    if (activePulseLineRef.current) {
+      activePulseLineRef.current.classList.remove('pulse-sweep', 'pulse-strong');
+      void activePulseLineRef.current.offsetWidth; // Force reflow
+
+      if (isStrongBeat) {
+        activePulseLineRef.current.classList.add('pulse-strong');
+      } else {
+        activePulseLineRef.current.classList.add('pulse-sweep');
+      }
+    }
+
+    const physiologicalJitter = (Math.random() * 120) - 60;
+    const nextInterval = 1010 + physiologicalJitter;
+
+    if (ecgTimeoutRef.current) clearTimeout(ecgTimeoutRef.current);
+    ecgTimeoutRef.current = setTimeout(() => {
+      triggerEcgBeat(false);
+    }, nextInterval);
+  };
+
+  // Clinical Monitor Beep
+  const emitClinicalMonitorBeep = () => {
+    try {
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContext) return;
+
+      const audioCtx = new AudioContext();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880.0, audioCtx.currentTime);
+
+      gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime + 0.02);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.6);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.75);
+    } catch (error) {
+      console.warn('Audio permissions deferred context creation.');
+    }
+  };
+
+  // Update clocks
+  const updateClocks = () => {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    });
+    const shortTimeString = now.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+    const timestampEl = document.getElementById('timestamp');
+    const receptionClockEl = document.getElementById('receptionClock');
+    if (timestampEl) timestampEl.innerText = timeString;
+    if (receptionClockEl) receptionClockEl.innerText = shortTimeString;
+  };
+
+  // Handle button click (transition sequence)
+  const handleBeginShift = () => {
+    if (isTransitioning) return;
+    
+    setIsTransitioning(true);
+    if (ecgTimeoutRef.current) clearTimeout(ecgTimeoutRef.current);
+
+    const body = document.body;
+
+    // Phase 1: Commitment (0.0s - 0.6s)
+    body.classList.add('p1-commitment');
+
+    // Phase 2: Environmental Dissolve (0.6s - 2.0s)
+    setTimeout(() => {
+      body.classList.remove('p1-commitment');
+      body.classList.add('p2-environmental-shift');
+    }, 600);
+
+    // Phase 3: Single Diagnostic Cardiac Pulse (2.0s - 3.5s)
+    setTimeout(() => {
+      body.classList.add('p3-heartbeat');
+      if (activePulseLineRef.current) {
+        activePulseLineRef.current.classList.remove('pulse-sweep', 'pulse-strong');
+        void activePulseLineRef.current.offsetWidth;
+        activePulseLineRef.current.classList.add('pulse-active');
+      }
+      setTimeout(emitClinicalMonitorBeep, 400);
+    }, 2000);
+
+    // Phase 4: Clinical Systems Initialization (3.5s - 5.5s)
+    setTimeout(() => {
+      body.classList.remove('p3-heartbeat');
+      body.classList.add('p4-systems-initialize');
+
+      const lines = ['line1', 'line2', 'line3', 'line4', 'line5'];
+      lines.forEach((id, index) => {
+        setTimeout(() => {
+          const lineEl = document.getElementById(id);
+          if (lineEl) lineEl.classList.add('active');
+        }, index * 450);
+      });
+    }, 3500);
+
+    // Phase 5: Crossing The Threshold (5.5s - 6.5s)
+    setTimeout(() => {
+      body.classList.add('p5-threshold');
+    }, 5500);
+
+    // Phase 6: Spatial Arrival & Vision Calibration (6.5s - 8.5s)
+    setTimeout(() => {
+      if (receptionDeskRef.current) {
+        receptionDeskRef.current.classList.add('arrived');
+      }
+      body.classList.remove('p5-threshold');
+    }, 6500);
+  };
+
+  // Handle system reset
+  const handleSystemReset = () => {
+    const body = document.body;
+    if (thresholdShroudRef.current) {
+      thresholdShroudRef.current.style.opacity = '1';
+    }
+
+    setTimeout(() => {
+      body.className = '';
+      if (receptionDeskRef.current) {
+        receptionDeskRef.current.classList.remove('arrived');
+      }
+      if (activePulseLineRef.current) {
+        activePulseLineRef.current.className = 'ecg-line-active';
+      }
+      setIsTransitioning(false);
+
+      const lines = ['line1', 'line2', 'line3', 'line4', 'line5'];
+      lines.forEach((id) => {
+        const lineEl = document.getElementById(id);
+        if (lineEl) lineEl.classList.remove('active');
+      });
+
+      setTimeout(() => {
+        if (thresholdShroudRef.current) {
+          thresholdShroudRef.current.style.opacity = '0';
+        }
+        triggerEcgBeat(false);
+      }, 600);
+    }, 700);
+  };
+
+  // Handle hover on button
+  const handleButtonHover = () => {
+    if (isTransitioning) return;
+    const now = Date.now();
+
+    if (now - lastHoverTimeRef.current < 950) return;
+    lastHoverTimeRef.current = now;
+
+    if (ecgTimeoutRef.current) clearTimeout(ecgTimeoutRef.current);
+    triggerEcgBeat(true);
+  };
+
+  // Initialize on mount
+  useEffect(() => {
+    triggerEcgBeat(false);
+    const clockInterval = setInterval(updateClocks, 1000);
+    updateClocks();
+
+    return () => {
+      clearInterval(clockInterval);
+      if (ecgTimeoutRef.current) clearTimeout(ecgTimeoutRef.current);
+    };
+  }, []);
+
   return (
-    <main className="min-h-screen bg-white flex flex-col">
+    <>
+      {/* Solid White Gatekeeping Screen (Phase 5) */}
+      <div className="threshold-shroud" ref={thresholdShroudRef} id="thresholdShroud" />
 
-      {/* Ambient gradient — barely visible, intentional */}
-      <div
-        aria-hidden
-        className="fixed inset-0 pointer-events-none select-none"
-        style={{
-          background:
-            'radial-gradient(ellipse 130% 70% at 50% -5%, rgba(15,23,42,0.055) 0%, transparent 62%)',
-        }}
-      />
-
-      {/* Core content — centred, nothing else */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center relative z-10">
-
-        {/* Wordmark */}
-        <h1
-          className="text-[4.5rem] sm:text-[6.5rem] md:text-[8rem] leading-none
-            text-slate-950 tracking-[-0.04em] select-none mb-6"
-          style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontWeight: 300 }}
+      {/* Active Environment Blueprint Layer */}
+      <div className="ambient-environment" id="ambientEnv">
+        <svg
+          className="blueprint-overlay"
+          id="blueprint"
+          viewBox="0 0 1920 1080"
+          preserveAspectRatio="none"
         >
-          Kairos
-        </h1>
-
-        {/* Tagline */}
-        <p
-          className="text-lg sm:text-xl md:text-2xl text-slate-400 font-light leading-relaxed
-            mb-14 max-w-xs sm:max-w-sm"
-        >
-          Become the doctor<br />
-          patients believe you are.
-        </p>
-
-        {/* Single CTA */}
-        <Link
-          href="/reception"
-          className="inline-flex items-center gap-3 px-8 py-4 bg-slate-950 text-white
-            rounded-2xl text-[0.9rem] font-medium tracking-wide
-            hover:bg-slate-800 active:scale-[0.99]
-            transition-all duration-200 shadow-xl shadow-slate-950/15"
-        >
-          Enter Hospital
-          <span className="opacity-50 text-sm">→</span>
-        </Link>
-
+          <path
+            d="M 80,40 L 80,1040 M 1840,40 L 1840,1040 M 80,160 L 1840,160 M 80,920 L 1840,920"
+            stroke="rgba(10, 17, 40, 0.01)"
+            strokeWidth="0.5"
+            fill="none"
+          />
+          <path
+            d="M 960,140 L 960,180 M 940,160 L 980,160"
+            stroke="rgba(0, 102, 255, 0.012)"
+            strokeWidth="0.75"
+          />
+          <path
+            d="M 400,540 L 420,540 M 410,530 L 410,550"
+            stroke="rgba(10, 17, 40, 0.008)"
+            strokeWidth="0.5"
+          />
+          <path
+            d="M 1520,540 L 1540,540 M 1530,530 L 1530,550"
+            stroke="rgba(10, 17, 40, 0.008)"
+            strokeWidth="0.5"
+          />
+          <rect
+            x="120"
+            y="200"
+            width="1680"
+            height="680"
+            rx="6"
+            stroke="rgba(10, 17, 40, 0.004)"
+            strokeWidth="0.5"
+            fill="none"
+          />
+          <text
+            x="140"
+            y="230"
+            fill="rgba(10, 17, 40, 0.012)"
+            fontSize="9"
+            fontFamily="monospace"
+            letterSpacing="0.1em"
+          >
+            CLINICAL BAY SEGMENT 04B
+          </text>
+          <text
+            x="1780"
+            y="230"
+            fill="rgba(10, 17, 40, 0.012)"
+            fontSize="9"
+            fontFamily="monospace"
+            letterSpacing="0.1em"
+            textAnchor="end"
+          >
+            SYS_KAIROS_RECEPTION
+          </text>
+        </svg>
+        <div className="ambient-glow-primary" />
       </div>
 
-      {/* Manifesto — bottom, small, confident */}
-      <footer className="relative z-10 text-center pb-8 pt-6">
-        <p className="text-[0.65rem] text-slate-200 tracking-[0.25em] uppercase select-none">
-          Free to kill. Free to learn.
-        </p>
+      {/* Master Landing Page Layout */}
+      <header id="landingHeader">
+        <a href="#" className="nav-brand">
+          Kairos
+        </a>
+        <nav className="nav-links-capsule">
+          <a href="#" className="capsule-link">
+            Guide
+          </a>
+          <a href="#" className="capsule-link">
+            Feedback
+          </a>
+        </nav>
+      </header>
+
+      <main id="landingMain">
+        <section className="brand-axis" id="brandAxis">
+          <div className="title-group" id="titleGroup">
+            <h1 className="hero-title" id="heroTitle">
+              Kairos
+              <div className="brand-vertex" id="brandVertex" />
+            </h1>
+            <div className="ecg-signature-container" id="ecgWrapper">
+              <svg className="ecg-svg" viewBox="0 0 600 40" preserveAspectRatio="none">
+                <path
+                  className="ecg-line-static"
+                  d="M 0,20 L 240,20 C 243,20 245,17 247,17 C 249,17 251,20 254,20 L 264,20 L 267,23 L 273,2 L 279,38 L 283,20 L 295,20 C 298,20 301,14 305,14 C 309,14 312,20 315,20 L 600,20"
+                />
+                <path
+                  className="ecg-line-active"
+                  ref={activePulseLineRef}
+                  id="activePulseLine"
+                  d="M 0,20 L 240,20 C 243,20 245,17 247,17 C 249,17 251,20 254,20 L 264,20 L 267,23 L 273,2 L 279,38 L 283,20 L 295,20 C 298,20 301,14 305,14 C 309,14 312,20 315,20 L 600,20"
+                />
+              </svg>
+            </div>
+          </div>
+          <p className="tagline">Every decision shapes an outcome.</p>
+          <div className="action-space">
+            <button
+              className="btn-action"
+              id="actionTrigger"
+              ref={triggerRef}
+              onClick={handleBeginShift}
+              onMouseEnter={handleButtonHover}
+            >
+              Begin Shift
+            </button>
+          </div>
+        </section>
+
+        {/* Dynamic Secondary Ambient Patient Dossier Card */}
+        <section className="atmospheric-peripheral" id="dynamicPeripheral">
+          <div className="patient-ghost-card">
+            <div className="card-row-top">
+              <span className="meta-label">Incoming Case</span>
+              <div className="triage-indicator-ambient">
+                <span className="triage-pulse-dot" />
+                Classified
+              </div>
+            </div>
+            <div className="demographics-container">
+              <h3 className="demographics-primary">Awaiting Assignment</h3>
+              <span className="demographics-sub">Authorization Required</span>
+            </div>
+            <div className="complaint-block">
+              <span className="meta-label">Dossier Integrity</span>
+              <span className="complaint-val">Encrypted // Hash 8F-991X</span>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer id="landingFooter">
+        <span className="footer-text">Omniscia Initiative</span>
+        <span className="footer-text">© 2026</span>
       </footer>
 
-    </main>
+      {/* System Terminal Overlay (Phase 4) */}
+      <div className="terminal-container" ref={terminalContainerRef} id="terminalContainer">
+        <div className="terminal-content">
+          <div className="terminal-line" id="line1">
+            <span className="terminal-dot" />
+            Initializing Shift...
+          </div>
+          <div className="terminal-line" id="line2">
+            <span className="terminal-dot" />
+            Loading Hospital Engine...
+          </div>
+          <div className="terminal-line" id="line3">
+            <span className="terminal-dot" />
+            Connecting to Emergency Department...
+          </div>
+          <div className="terminal-line" id="line4">
+            <span className="terminal-dot" />
+            Retrieving Patient Queue...
+          </div>
+          <div className="terminal-line ready" id="line5">
+            <span className="terminal-dot" />
+            Shift Ready.
+          </div>
+        </div>
+      </div>
+
+      {/* Initialization Metadata */}
+      <div className="init-metadata-container" ref={initMetadataRef} id="initMetadata">
+        <div className="metadata-column">
+          <span>LOCATION COORDINATES</span>
+          <span className="metadata-val">BAY 04 — SECTOR B // METRO</span>
+        </div>
+        <div className="metadata-column" style={{ textAlign: 'right' }}>
+          <span>OPERATIONAL SHIFT TIME</span>
+          <span className="metadata-val" id="timestamp">
+            08:42:11 AM
+          </span>
+        </div>
+      </div>
+
+      {/* Reception Destination Interface (Phase 6) */}
+      <div className="reception-environment" ref={receptionDeskRef} id="receptionDesk">
+        <header className="reception-header">
+          <div className="reception-title-group">
+            <span className="nav-brand">Kairos // Admissions</span>
+            <span className="badge-live">Shift Active</span>
+          </div>
+          <button className="btn-system-reset" id="systemReset" onClick={handleSystemReset}>
+            Sign Out of Shift
+          </button>
+        </header>
+
+        <div className="reception-body">
+          {/* Active Admissions Queue */}
+          <div className="clinical-queue-section">
+            <div className="section-header">
+              <h2>Patient Intake Queue</h2>
+              <span
+                style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: '13px',
+                  color: 'var(--text-muted)',
+                }}
+              >
+                5 Patients Active
+              </span>
+            </div>
+            <table className="queue-table">
+              <thead>
+                <tr>
+                  <th>Patient ID</th>
+                  <th>Triage Class</th>
+                  <th>Chief Complaint</th>
+                  <th>Wait Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="patient-id">#KRS-901</td>
+                  <td>
+                    <span className="triage-badge" style={{ color: '#E11D48' }}>
+                      <span className="triage-dot-critical" />
+                      Critical
+                    </span>
+                  </td>
+                  <td>Chest Pain / Dyspnea</td>
+                  <td>01m 12s</td>
+                </tr>
+                <tr>
+                  <td className="patient-id">#KRS-442</td>
+                  <td>
+                    <span className="triage-badge" style={{ color: '#E11D48' }}>
+                      <span className="triage-dot-critical" />
+                      Critical
+                    </span>
+                  </td>
+                  <td>Unknown Trauma</td>
+                  <td>02m 44s</td>
+                </tr>
+                <tr>
+                  <td className="patient-id">#KRS-811</td>
+                  <td>
+                    <span className="triage-badge" style={{ color: '#F59E0B' }}>
+                      <span className="triage-dot-urgent" />
+                      Urgent
+                    </span>
+                  </td>
+                  <td>Acute Hemiparesis</td>
+                  <td>08m 19s</td>
+                </tr>
+                <tr>
+                  <td className="patient-id">#KRS-203</td>
+                  <td>
+                    <span className="triage-badge" style={{ color: '#8E9CAE' }}>
+                      Standard
+                    </span>
+                  </td>
+                  <td>Isolated Extremity Trauma</td>
+                  <td>12m 04s</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Terminal Assignment Details Panel */}
+          <div className="reception-details-panel">
+            <div>
+              <h3 style={{ fontSize: '15px', fontWeight: 500, marginBottom: '24px' }}>
+                Admissions Terminal 04
+              </h3>
+              <div className="panel-metadata-row">
+                <span>Staff Assignee</span>
+                <span>Dr. Practitioner</span>
+              </div>
+              <div className="panel-metadata-row">
+                <span>Department</span>
+                <span>Emergency Medicine</span>
+              </div>
+              <div className="panel-metadata-row">
+                <span>On-Duty Area</span>
+                <span>City General Trauma Bay B</span>
+              </div>
+            </div>
+            <div
+              style={{
+                fontSize: '12px',
+                color: 'var(--text-muted)',
+                lineHeight: 1.6,
+                borderTop: '1px solid rgba(10, 17, 40, 0.04)',
+                paddingTop: '24px',
+              }}
+            >
+              Ensure clinical examination criteria matches local emergency protocols. Prioritize
+              class-1 critical pathways immediately.
+            </div>
+          </div>
+        </div>
+
+        <footer style={{ backgroundColor: '#ffffff', borderTop: '1px solid rgba(10, 17, 40, 0.02)' }}>
+          <span className="footer-text">City General Hospital Systems</span>
+          <span className="footer-text" id="receptionClock">
+            08:42 AM
+          </span>
+        </footer>
+      </div>
+    </>
   );
 }
