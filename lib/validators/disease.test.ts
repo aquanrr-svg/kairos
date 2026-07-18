@@ -139,6 +139,22 @@ describe("validateDisease — cross-field consistency", () => {
   });
 });
 
+describe("validateDisease — reflection trigger registration", () => {
+  it("flags a reflection hook whose trigger has no registered evaluator", () => {
+    const d = cloneStemi();
+    d.reflectionHooks[0].trigger = "totally_unregistered_trigger";
+    const result = validateDisease(d);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes("references unknown trigger"))).toBe(true);
+  });
+
+  it("accepts the real STEMI disease — every hook maps to a registered evaluator", () => {
+    expect(
+      validateDisease(stemi).errors.some(e => e.includes("references unknown trigger"))
+    ).toBe(false);
+  });
+});
+
 describe("validateDisease — semantic medicine references", () => {
   it("flags a treatment referencing an unknown medicine id", () => {
     const d = cloneStemi();

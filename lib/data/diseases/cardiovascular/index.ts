@@ -11,4 +11,4 @@
 //   That is all.
 // ─────────────────────────────────────────────
 
-export { stemi } from "./stemi";
+export { stemi } from "./stemi/index";
