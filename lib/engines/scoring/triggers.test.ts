@@ -50,8 +50,10 @@ describe("getTriggerEvaluator", () => {
   });
 
   it("falls back to the permissive default for triggers not in the registry", () => {
-    // Regression guard: the active STEMI data (stemi.ts) uses trigger strings
-    // that are NOT in the evaluator registry, so these fall back to false.
+    // Regression guard: these are the legacy STEMI trigger strings that used to
+    // ship in the old monolithic stemi.ts and did NOT match any evaluator. The
+    // active disease no longer uses them; they must remain unregistered so the
+    // fallback behaviour stays well-defined.
     for (const t of [
       "antiplatelet_incomplete",
       "cath_lab_not_activated_early",

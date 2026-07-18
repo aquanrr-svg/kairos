@@ -26,6 +26,7 @@
 
 import { Disease, Investigation } from "../engines/disease/types";
 import { DataStatus } from "../types/enums";
+import { getRegisteredTriggers } from "../engines/scoring/triggers";
 
 // ─── Public Types ─────────────────────────────
 
@@ -201,6 +202,24 @@ function validateReflectionWeights(disease: Disease): string[] {
   return errors;
 }
 
+function validateReflectionTriggers(disease: Disease): string[] {
+  const errors: string[] = [];
+  const registered = getRegisteredTriggers();
+
+  (disease.reflectionHooks ?? []).forEach((hook, i) => {
+    if (!registered.has(hook.trigger)) {
+      errors.push(
+        `Reflection hook[${i}] ("${hook.id}") references unknown trigger ` +
+        `"${hook.trigger}". No evaluator is registered for it in the Scoring ` +
+        `Engine, so this hook would silently award full points. ` +
+        `Register an evaluator in lib/engines/scoring/triggers.ts or fix the trigger name.`
+      );
+    }
+  });
+
+  return errors;
+}
+
 function validateOutcomeProbabilities(disease: Disease): string[] {
   const errors: string[] = [];
 
@@ -260,6 +279,7 @@ const structuralValidators: readonly StructuralValidator[] = [
   validateInvestigations,
   validateTreatmentStructure,
   validateReflectionWeights,
+  validateReflectionTriggers,
   validateOutcomeProbabilities,
 ];
 

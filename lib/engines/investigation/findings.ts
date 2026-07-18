@@ -201,23 +201,49 @@ export function generateFindings(
  * Severity filtering is intentionally absent.
  * Callers pass ecgFindings from the already-resolved result tier.
  */
+// Crossover probability for location-mismatched findings.
+// Anatomical variability means inferior changes can occasionally
+// appear in anterior STEMI and vice versa.
+const LOCATION_CROSSOVER_KNOWN     = 0.10; // patient location known but mismatched
+const LOCATION_CROSSOVER_UNKNOWN   = 0.05; // patient location not determinable
+
+function passesLocationFilter(
+  finding:         ECGFinding,
+  infarctLocation: InfarctLocation | undefined,
+  rng:             SeededRNG
+): boolean {
+  // No location dependency → always relevant.
+  if (!finding.locationDependency || finding.locationDependency.length === 0) {
+    return true;
+  }
+  // Matching location → always included.
+  if (
+    infarctLocation !== undefined &&
+    finding.locationDependency.includes(infarctLocation)
+  ) {
+    return true;
+  }
+  // Mismatched (or undetermined) location → included with a small
+  // crossover probability rather than being dropped entirely.
+  const crossover = infarctLocation === undefined
+    ? LOCATION_CROSSOVER_UNKNOWN
+    : LOCATION_CROSSOVER_KNOWN;
+  return rng.chance(crossover);
+}
+
 export function generateECGFindings(
-    ecgFindings:     readonly ECGFinding[],
-      infarctLocation: InfarctLocation | undefined,
-        rng:             SeededRNG
-        ): readonly GeneratedECGFinding[] {
-          return ecgFindings
-              .filter(f => {
-                    if (!f.locationDependency || f.locationDependency.length === 0) return true;
-                          if (infarctLocation !== undefined && f.locationDependency.includes(infarctLocation)) return true;
-                                return false;
-                                    })
-                                        .filter(f => rng.chance(f.probability))
-                                            .map(f => ({
-                                                  leads:              f.leads,
-                                                        finding:            f.finding,
-                                                              interpretation:     f.interpretation as string,
-                                                                    clinicalImportance: f.clinicalImportance as string,
-                                                                        }));
-                                                                        }
+  ecgFindings:     readonly ECGFinding[],
+  infarctLocation: InfarctLocation | undefined,
+  rng:             SeededRNG
+): readonly GeneratedECGFinding[] {
+  return ecgFindings
+    .filter(f => passesLocationFilter(f, infarctLocation, rng))
+    .filter(f => rng.chance(f.probability))
+    .map(f => ({
+      leads:              f.leads,
+      finding:            f.finding,
+      interpretation:     f.interpretation as string,
+      clinicalImportance: f.clinicalImportance as string,
+    }));
+}
 
