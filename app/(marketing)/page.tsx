@@ -269,14 +269,14 @@ export default function LandingPage() {
 
       {/* Master Landing Page Layout */}
       <header id="landingHeader">
-        <a href="#" className="nav-brand">
+        <a href="https://kairosdx.vercel.app" className="nav-brand">
           Kairos
         </a>
         <nav className="nav-links-capsule">
-          <a href="#" className="capsule-link">
+          <a href="https://kairosdx.vercel.app" className="capsule-link">
             Guide
           </a>
-          <a href="#" className="capsule-link">
+          <a href="https://kairosdx.vercel.app" className="capsule-link">
             Feedback
           </a>
         </nav>
