@@ -17,29 +17,14 @@ import { generatePatientCase }  from '../../../lib/engines/patient';
 import { generateEncounter }    from '../../../lib/engines/encounter';
 import { createSession }        from '../../../lib/engines/hospital';
 import { Severity }             from '../../../lib/types/enums';
-
-function timeGreeting(): string {
-  const h = new Date().getHours();
-  if (h >= 5  && h < 12) return 'Good morning';
-  if (h >= 12 && h < 17) return 'Good afternoon';
-  if (h >= 17 && h < 21) return 'Good evening';
-  return 'Good evening';
-}
-
-function formatTime(): string {
-  return new Date().toLocaleTimeString('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
-}
+import { timeGreeting, formatClockTime } from '../../../lib/shared/time';
 
 export default function ReceptionPage() {
   const router              = useRouter();
   const { state, dispatch } = useSession();
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState<string | null>(null);
-  const [clockTime, setClockTime] = useState(formatTime);
+  const [clockTime, setClockTime] = useState(() => formatClockTime());
 
   // If session already exists, go straight to patient room
   useEffect(() => {
@@ -50,7 +35,7 @@ export default function ReceptionPage() {
 
   // Live clock — subtle but alive
   useEffect(() => {
-    const id = setInterval(() => setClockTime(formatTime()), 30_000);
+    const id = setInterval(() => setClockTime(formatClockTime()), 30_000);
     return () => clearInterval(id);
   }, []);
 

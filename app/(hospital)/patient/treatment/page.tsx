@@ -1,5 +1,8 @@
 "use client";
 import { useState } from "react";
+import ScreenShell from "../../../../components/kairos/ScreenShell";
+import PrimaryLink from "../../../../components/kairos/PrimaryLink";
+import { useToggleSet } from "../../../../lib/shared/useToggleSet";
 
 const diagnoses = [
   "Acute ST-Elevation Myocardial Infarction (STEMI)",
@@ -19,37 +22,21 @@ const treatments = [
 
 export default function TreatmentPage() {
   const [diagnosis, setDiagnosis] = useState<string>("");
-  const [selected, setSelected] = useState<string[]>([]);
-
-  function toggleTreatment(id: string) {
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
-    );
-  }
+  const { items: selected, toggle: toggleTreatment, has } = useToggleSet();
 
   const canSubmit = diagnosis !== "" && selected.length > 0;
 
   return (
-    <main className="min-h-screen bg-white flex flex-col px-6 py-10">
-      <div className="max-w-md mx-auto w-full flex flex-col flex-1">
-
-        <a href="/patient" className="text-xs text-slate-400 hover:text-slate-600 mb-8 flex items-center gap-1">
-          ← Back to Patient
-        </a>
-
-        <h1 className="font-[family-name:var(--font-instrument-serif)] text-3xl text-slate-900 mb-2">
-          Diagnosis & Treatment
-        </h1>
-        <p className="text-sm text-slate-400 mb-8 leading-relaxed">
-          Based on your assessment. The call is yours.
-        </p>
-
-        {/* Diagnosis */}
-        <p className="text-xs tracking-widest text-slate-400 uppercase mb-3">
-          Working Diagnosis
-        </p>
-        <div className="flex flex-col gap-2 mb-8">
-          {diagnoses.map((d) => (
+    <ScreenShell
+      title="Diagnosis & Treatment"
+      subtitle="Based on your assessment. The call is yours."
+    >
+      {/* Diagnosis */}
+      <p className="text-xs tracking-widest text-slate-400 uppercase mb-3">
+        Working Diagnosis
+      </p>
+      <div className="flex flex-col gap-2 mb-8">
+        {diagnoses.map((d) => (
             <button
               key={d}
               onClick={() => setDiagnosis(d)}
@@ -81,20 +68,20 @@ export default function TreatmentPage() {
               key={t.id}
               onClick={() => toggleTreatment(t.id)}
               className={`w-full text-left px-4 py-3.5 rounded-2xl border text-sm transition-all flex items-center gap-3 ${
-                selected.includes(t.id)
+                has(t.id)
                   ? "border-emerald-300 bg-emerald-50"
                   : "border-slate-200 hover:border-slate-300"
               }`}
             >
               <span className={`h-5 w-5 rounded-lg border-2 flex-shrink-0 flex items-center justify-center text-xs font-bold ${
-                selected.includes(t.id)
+                has(t.id)
                   ? "border-emerald-500 bg-emerald-500 text-white"
                   : "border-slate-300 text-transparent"
               }`}>
                 ✓
               </span>
               <div>
-                <p className={`font-semibold ${selected.includes(t.id) ? "text-emerald-800" : "text-slate-800"}`}>
+                <p className={`font-semibold ${has(t.id) ? "text-emerald-800" : "text-slate-800"}`}>
                   {t.drug}
                 </p>
                 <p className="text-xs text-slate-400 mt-0.5">{t.detail}</p>
@@ -103,23 +90,15 @@ export default function TreatmentPage() {
           ))}
         </div>
 
-        <a
-          href={canSubmit ? "/outcome" : "#"}
-          className={`block text-center px-10 py-4 rounded-2xl text-sm font-semibold transition-all shadow-lg ${
-            canSubmit
-              ? "bg-slate-900 text-white hover:bg-slate-800 shadow-slate-900/20"
-              : "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none"
-          }`}
-        >
-          Submit Treatment Plan →
-        </a>
+      <PrimaryLink href="/outcome" disabled={!canSubmit} className="block text-center">
+        Submit Treatment Plan →
+      </PrimaryLink>
 
-        {!canSubmit && (
-          <p className="text-center text-xs text-slate-400 mt-3 italic">
-            Select a diagnosis and at least one treatment to continue.
-          </p>
-        )}
-      </div>
-    </main>
+      {!canSubmit && (
+        <p className="text-center text-xs text-slate-400 mt-3 italic">
+          Select a diagnosis and at least one treatment to continue.
+        </p>
+      )}
+    </ScreenShell>
   );
 }
