@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function LandingPage() {
+  const router = useRouter();
   const activePulseLineRef = useRef<SVGPathElement>(null);
   const terminalContainerRef = useRef<HTMLDivElement>(null);
   const initMetadataRef = useRef<HTMLDivElement>(null);
@@ -133,13 +135,20 @@ export default function LandingPage() {
       body.classList.add('p5-threshold');
     }, 5500);
 
-    // Phase 6: Spatial Arrival & Vision Calibration (6.5s - 8.5s)
+    // Phase 6: Cross the threshold into the live shift.
+    // The white threshold shroud (Phase 5) is fully up here, so the
+    // route change is visually masked. Reception generates the case
+    // through the engines and hands off to the patient room.
     setTimeout(() => {
-      if (receptionDeskRef.current) {
-        receptionDeskRef.current.classList.add('arrived');
-      }
-      body.classList.remove('p5-threshold');
-    }, 6500);
+      body.classList.remove(
+        'p1-commitment',
+        'p2-environmental-shift',
+        'p3-heartbeat',
+        'p4-systems-initialize',
+        'p5-threshold',
+      );
+      router.push('/reception');
+    }, 6300);
   };
 
   // Handle system reset

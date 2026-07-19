@@ -21,10 +21,14 @@
   --font-mono: 'JetBrains Mono', monospace;
 }
 
+/* NOTE: This rule is intentionally NOT a `margin/padding: 0` reset.
+   globals.css is unlayered, so it wins over Tailwind's `@layer utilities`
+   regardless of specificity. A universal `margin: 0; padding: 0` here would
+   silently override every Tailwind spacing utility (px-*, py-*, mx-auto,
+   space-y-*, etc.) app-wide and collapse all layouts. Tailwind Preflight
+   already provides the margin reset. */
 * {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -34,6 +38,16 @@ body {
   color: var(--text-main);
   font-family: 'Inter', sans-serif;
   min-height: 100vh;
+}
+
+/* ── Landing experience shell ──────────────────────────────
+   Full-viewport, non-scrolling stage for the marketing/landing
+   route ONLY. Applied by app/(marketing)/layout.tsx. Every
+   landing-specific bare-element rule below is scoped to this
+   class so it can never leak into the hospital/patient pages. */
+.landing-shell {
+  min-height: 100vh;
+  height: 100vh;
   overflow: hidden;
   position: relative;
   display: flex;
@@ -42,7 +56,7 @@ body {
 }
 
 /* Film Grain Overlay (<1.2% Visibility) */
-body::before {
+.landing-shell::before {
   content: '';
   position: fixed;
   inset: 0;
@@ -87,7 +101,7 @@ body::before {
 }
 
 /* Navigation Header */
-header {
+.landing-shell header {
   padding: 40px 80px;
   display: flex;
   justify-content: space-between;
@@ -149,7 +163,7 @@ header {
 }
 
 /* Central Workspace Composition */
-main {
+.landing-shell main {
   flex: 1;
   display: flex;
   align-items: center;
@@ -437,7 +451,7 @@ main {
 }
 
 /* Footer */
-footer {
+.landing-shell footer {
   padding: 40px 80px;
   display: flex;
   justify-content: space-between;
@@ -828,7 +842,7 @@ body.p5-threshold .ecg-signature-container {
     gap: 40px;
     padding: 40px;
   }
-  header, footer {
+  .landing-shell header, .landing-shell footer {
     padding: 32px 40px;
   }
 }
