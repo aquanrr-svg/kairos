@@ -21,6 +21,27 @@ export {
 } from "./clock/clock";
 
 export {
+  createQueue,
+  tickQueue,
+  sortQueue,
+  criticalCount,
+  waitingCount,
+  activeDepartments,
+} from "./queue/queue";
+
+export {
+  createBeds,
+  occupyBed,
+  freeBed,
+  unitLoad,
+  available,
+  hospitalLoad,
+  loadLabel,
+} from "./beds/beds";
+
+export { CursorRng } from "./rng";
+
+export {
   DEFAULT_AMBIENT_CONFIG,
 } from "./config";
 
@@ -44,3 +65,16 @@ export type {
   ShiftPhase,
   ShiftMilestone,
 } from "./types";
+
+export type {
+  WaitingPatient,
+  QueueState,
+  AmbientTriage,
+} from "./queue/queue";
+
+export type {
+  BedState,
+  UnitBeds,
+  BedUnit,
+  LoadLabel,
+} from "./beds/beds";

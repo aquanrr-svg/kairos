@@ -23,6 +23,8 @@
 // ─────────────────────────────────────────────
 
 import { AmbientConfig } from "./config";
+import { QueueState } from "./queue/queue";
+import { BedState } from "./beds/beds";
 
 // ─── Hospital Mood (Phase 5 drives it; declared now) ──
 // The global emotional/operational tone of the department.
@@ -86,6 +88,8 @@ export interface AmbientState {
   readonly status:    AmbientStatus;
   readonly clock:     AmbientClock;
   readonly mood:      HospitalMood;
+  readonly queue:     QueueState;
+  readonly beds:      BedState;
 }
 
 // ─── Ambient Actions ──────────────────────────

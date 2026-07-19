@@ -24,6 +24,14 @@ import {
   HospitalMood,
 } from "./types";
 import { advanceClock } from "./clock/clock";
+import { CursorRng } from "./rng";
+import { createQueue, tickQueue } from "./queue/queue";
+import { createBeds } from "./beds/beds";
+
+/** Mood-driven arrival-rate multiplier, read from config. */
+function moodArrivalMultiplier(config: AmbientConfig, mood: HospitalMood): number {
+  return config.mood.arrivalMultiplier[mood] ?? 1;
+}
 
 // ─── Construction ─────────────────────────────
 
@@ -35,13 +43,19 @@ export function createAmbient(
   config: AmbientConfig = DEFAULT_AMBIENT_CONFIG,
   seed:   number = 1
 ): AmbientState {
+  const safeSeed = seed >>> 0 || 1;
+  const rng   = new CursorRng(safeSeed, 0);
+  const queue = createQueue(config, rng, 0);
+  const beds  = createBeds(config, rng);
   return {
     config,
-    seed:      seed >>> 0 || 1,
-    rngCursor: 0,
+    seed:      safeSeed,
+    rngCursor: rng.cursor,
     status:    "running",
     clock:     { tick: 0, elapsedWorldMinutes: 0 },
     mood:      HospitalMood.Quiet,
+    queue,
+    beds,
   };
 }
 
@@ -62,9 +76,24 @@ export function advanceAmbient(
       if (state.status !== "running") return state;
       const delta = action.deltaTicks ?? 1;
       if (delta <= 0) return state;
+
+      const arrivalMult = moodArrivalMultiplier(state.config, state.mood);
+      const rng   = new CursorRng(state.seed, state.rngCursor);
+
+      // Advance one tick at a time so arrivals/deterioration stay
+      // deterministic regardless of how many ticks are batched.
+      let clock = state.clock;
+      let queue = state.queue;
+      for (let i = 0; i < delta; i++) {
+        clock = advanceClock(clock, state.config.clock, 1);
+        queue = tickQueue(queue, state.config, rng, clock.tick, arrivalMult);
+      }
+
       return {
         ...state,
-        clock: advanceClock(state.clock, state.config.clock, delta),
+        clock,
+        queue,
+        rngCursor: rng.cursor,
       };
     }
 

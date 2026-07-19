@@ -9,7 +9,9 @@ describe("createAmbient", () => {
     expect(s.clock).toEqual({ tick: 0, elapsedWorldMinutes: 0 });
     expect(s.status).toBe("running");
     expect(s.mood).toBe(HospitalMood.Quiet);
-    expect(s.rngCursor).toBe(0);
+    // Queue + beds seeding consumes the RNG stream at creation.
+    expect(s.rngCursor).toBeGreaterThan(0);
+    expect(s.queue.waiting.length).toBe(DEFAULT_AMBIENT_CONFIG.queue.initialWaiting);
     expect(s.config).toBe(DEFAULT_AMBIENT_CONFIG);
   });
 
