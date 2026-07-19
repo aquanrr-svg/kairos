@@ -12,34 +12,30 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter }            from 'next/navigation';
 import { useSession }           from '../../../lib/context/SessionContext';
+import { useAmbient }           from '../../../lib/context/AmbientContext';
+import { shiftPhase }           from '../../../lib/engines/ambient';
 import { DiseaseRegistry }      from '../../../lib/data/diseases';
 import { generatePatientCase }  from '../../../lib/engines/patient';
 import { generateEncounter }    from '../../../lib/engines/encounter';
 import { createSession }        from '../../../lib/engines/hospital';
 import { Severity }             from '../../../lib/types/enums';
 
-function timeGreeting(): string {
-  const h = new Date().getHours();
+function greetingForMinute(minuteOfDay: number): string {
+  const h = Math.floor(minuteOfDay / 60);
   if (h >= 5  && h < 12) return 'Good morning';
   if (h >= 12 && h < 17) return 'Good afternoon';
-  if (h >= 17 && h < 21) return 'Good evening';
   return 'Good evening';
-}
-
-function formatTime(): string {
-  return new Date().toLocaleTimeString('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
 }
 
 export default function ReceptionPage() {
   const router              = useRouter();
   const { state, dispatch } = useSession();
+  const { state: ambient }  = useAmbient();
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState<string | null>(null);
-  const [clockTime, setClockTime] = useState(formatTime);
+
+  // Live ambient shift clock — the hospital keeps time on its own.
+  const phase = shiftPhase(ambient.clock, ambient.config.clock);
 
   // Set when the student starts a fresh case here, so the guard below
   // doesn't hijack the intended reception → nurse-briefing navigation.
@@ -54,12 +50,6 @@ export default function ReceptionPage() {
       router.replace('/patient');
     }
   }, [state.initialized, state.session, router]);
-
-  // Live clock — subtle but alive
-  useEffect(() => {
-    const id = setInterval(() => setClockTime(formatTime()), 30_000);
-    return () => clearInterval(id);
-  }, []);
 
   function startCase() {
     setLoading(true);
@@ -100,7 +90,7 @@ export default function ReceptionPage() {
         {/* Department header */}
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-8">
-            <span className="text-sm font-mono text-slate-400">{clockTime}</span>
+            <span className="text-sm font-mono text-slate-400">{phase.label}</span>
             <span className="w-px h-3.5 bg-slate-200" />
             <span className="text-sm text-slate-400">Emergency Department</span>
           </div>
@@ -109,7 +99,7 @@ export default function ReceptionPage() {
             className="text-4xl text-slate-950 tracking-tight font-light mb-3"
             style={{ fontFamily: 'Georgia, serif' }}
           >
-            {timeGreeting()}, Doctor.
+            {greetingForMinute(phase.minuteOfDay)}, Doctor.
           </h1>
           <p className="text-slate-500 text-base leading-relaxed">
             There is a patient waiting for your assessment.
